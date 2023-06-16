@@ -1,6 +1,6 @@
 # Data
 
-The data we will be working with in this repo is [this dataset of 7+ million companies](https://www.kaggle.com/datasets/peopledatalabssf/free-7-million-company-dataset) from Kaggle. The data is in CSV format, and is quote large when unzipped (1.09 GB). As a result, it's not stored here -- but it's easy to sign up for a Kaggle account and download it.
+The data we will be working with in this repo is [this dataset of 7+ million companies](https://www.kaggle.com/datasets/peopledatalabssf/free-7-million-company-dataset) from Kaggle. The data is in CSV format, and is quite large when unzipped (1.09 GB). As a result, it's not stored here -- but it's easy to sign up for a Kaggle account and download it to your local machine.
 
 To demonstrate the power of embedded databases, the data is converted to parquet format via `polars` as shown below.
 
