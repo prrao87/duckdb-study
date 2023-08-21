@@ -1,8 +1,10 @@
 import argparse
 from pathlib import Path
+from typing import final
 
 import numpy as np
 import polars as pl
+from codetiming import Timer
 
 
 def get_companies(filename: str) -> pl.DataFrame:
@@ -14,7 +16,7 @@ def get_companies(filename: str) -> pl.DataFrame:
     df = (
         df.with_columns(pl.col("year_founded").cast(pl.Int32, strict=True))
         .rename({"column_0": "company_id"})
-        .filter(pl.col("country").is_not_null())
+        .filter(pl.col("country").is_not_null() & pl.col("year_founded").is_not_null())
     )
     if LIMIT > 0:
         df = df.limit(LIMIT)
@@ -74,10 +76,10 @@ def construct_person_company_and_location_df(
 
 
 def main(num_persons: int, num_positions: int) -> None:
-    companies = get_companies(INPUT_FILE)
-    companies_count = get_top_country_counts(companies)
-    # Top 10 countries
-    top_10_countries = companies_count["country"][:10].to_list()
+    with Timer(name="read file", text="Read input file in {:.4f}s"):
+        companies = get_companies(INPUT_FILE)
+    top_10_countries = get_top_country_counts(companies)["country"][:10].to_list()
+
     # Filter companies by top 10 countries
     final_companies = companies.filter(
         (pl.col("country").is_in(top_10_countries) & pl.col("locality").is_not_null())
@@ -106,6 +108,7 @@ if __name__ == "__main__":
 
     np.random.seed(37)
 
-    result = main(NUM_PERSONS, NUM_POSITIONS)
-    print(f"Obtained persons, companies and locations DataFrame of shape: {result.shape}")
-    print(result.head(10))
+    with Timer(name="generation", text="Generating data completed in {:.4f}s"):
+        result = main(NUM_PERSONS, NUM_POSITIONS)
+        print(f"Obtained persons, companies and locations DataFrame of shape: {result.shape}")
+        print(result.head(10))
