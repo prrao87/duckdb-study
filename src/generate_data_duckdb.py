@@ -5,11 +5,17 @@ import duckdb
 import numpy as np
 import polars as pl
 import pyarrow as pa
+from codetiming import Timer
 from duckdb import DuckDBPyConnection, DuckDBPyRelation
 
 
-def get_companies_table(conn: DuckDBPyConnection, parquet_file: str) -> DuckDBPyRelation:
-    companies = conn.sql(f"SELECT * FROM '{parquet_file}'")
+def get_companies(conn: DuckDBPyConnection, parquet_file: str) -> DuckDBPyRelation:
+    companies = conn.sql(
+        f"""
+        SELECT * FROM '{parquet_file}'
+        WHERE country IS NOT NULL
+        """
+    )
     # Obtain column names and replace spaces with underscores
     names = companies.columns
     names = [(name, name.replace(" ", "_").lower()) for name in names]
@@ -22,16 +28,18 @@ def get_companies_table(conn: DuckDBPyConnection, parquet_file: str) -> DuckDBPy
     return companies
 
 
-def get_top_10_countries(conn: DuckDBPyConnection, companies: DuckDBPyRelation) -> DuckDBPyRelation:
-    top_10_countries = conn.sql(
+def get_top_country_counts(
+    conn: DuckDBPyConnection, companies: DuckDBPyRelation
+) -> DuckDBPyRelation:
+    top_countries = conn.sql(
         """
-        SELECT country, COUNT(company_id) as counts FROM companies
-        WHERE country IS NOT NULL
+        SELECT country, COUNT(company_id) AS counts FROM companies
+        WHERE year_founded IS NOT NULL
         GROUP BY country
         ORDER BY counts DESC
         """
-    ).limit(10)
-    return top_10_countries
+    )
+    return top_countries
 
 
 def get_final_companies(
@@ -41,7 +49,7 @@ def get_final_companies(
         """
             SELECT * FROM companies
             WHERE country IN (SELECT country FROM top_10_countries)
-            AND locality IS NOT NULL
+            AND year_founded IS NOT NULL AND locality IS NOT NULL
             ORDER BY company_id
             """
     )
@@ -79,7 +87,7 @@ def get_person_companies(
             pa.array(companies_list),
         ],
         names=["person_id", "company_id"],
-    )
+    ).sort_by("person_id")
     return person_ages_tbl, person_companies_tbl
 
 
@@ -103,8 +111,9 @@ def get_person_companies_locations(
 
 
 def main(conn: DuckDBPyConnection, num_persons: int, num_positions: int) -> pl.DataFrame:
-    companies = get_companies_table(conn, INPUT_FILE)
-    top_10_countries = get_top_10_countries(conn, companies)
+    with Timer(name="read file", text="Read input file in {:.4f}s"):
+        companies = get_companies(conn, INPUT_FILE)
+    top_10_countries = get_top_country_counts(conn, companies).limit(10)
     final_companies = get_final_companies(conn, companies, top_10_countries)
     person_ages_tbl, person_companies_tbl = get_person_companies(
         conn, num_persons, num_positions, final_companies
@@ -131,6 +140,7 @@ if __name__ == "__main__":
     # Obtain duckdb connection
     CONNECTION = duckdb.connect()
 
-    result = main(CONNECTION, NUM_PERSONS, NUM_POSITIONS)
-    print(f"Obtained persons, companies and locations table")
-    print(result.head(10))
+    with Timer(name="generation", text="Generating data completed in {:.4f}s"):
+        result = main(CONNECTION, NUM_PERSONS, NUM_POSITIONS)
+        print(f"Obtained persons, companies and locations table")
+        print(result.head(10))
