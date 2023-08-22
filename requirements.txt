@@ -1,4 +1,6 @@
+pandas~=2.0.0
 pyarrow~=12.0.0
 duckdb~=0.8.0
 polars~=0.18.0
 numpy>=1.25.0
+codetiming>=1.4.0
