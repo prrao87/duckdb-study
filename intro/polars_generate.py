@@ -2,46 +2,42 @@ import argparse
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
+import polars as pl
 from codetiming import Timer
 
 
-def get_companies(filename: str) -> pd.DataFrame:
-    """Reads the companies data from a csv f
-    ile and returns a pandas DataFrame."""
-    df = pd.read_parquet(filename).rename(columns={"": "company_id"})
+def get_companies(filename: str, limit: int) -> pl.DataFrame:
+    """Reads the companies data from a csv file and returns a polars DataFrame."""
+    df = pl.read_parquet(filename, use_pyarrow=True)
     # Replace spaces with underscores in column names
-    df.columns = df.columns.str.replace(" ", "_")
-    # Ensure no null values are present in `year_founded` column
-    df = df[df.year_founded.notnull() & df.country.notnull()]
+    df.columns = list(map(lambda x: x.replace(" ", "_"), df.columns))
     # Cast year_founded as int
-    df.year_founded = df.year_founded.astype(int)
-    if LIMIT > 0:
-        df = df.iloc[:LIMIT, :]
+    df = (
+        df.with_columns(pl.col("year_founded").cast(pl.Int32, strict=True))
+        .rename({"column_0": "company_id"})
+        .filter(pl.col("country").is_not_null() & pl.col("year_founded").is_not_null())
+    )
+    if limit > 0:
+        df = df.limit(limit)
     return df
 
 
-def get_top_country_counts(companies: pd.DataFrame) -> pd.DataFrame:
+def get_top_country_counts(companies: pl.DataFrame) -> pl.DataFrame:
     companies_count = (
         companies.groupby("country")
-        .agg({"company_id": "count"})
-        .sort_values(by="company_id", ascending=False)
+        .agg(pl.count("company_id").alias("counts"))
+        .sort("counts", descending=True)
     )
     return companies_count
 
 
 def construct_person_company_df(
-    num_persons: int, num_positions: int, final_companies: pd.DataFrame
-) -> tuple[pd.DataFrame, pd.DataFrame]:
+    num_persons: int, num_positions: int, final_companies: pl.DataFrame
+) -> tuple[pl.DataFrame, pl.DataFrame]:
     persons = np.arange(start=1, stop=num_persons + 1)
     # Generate ages for persons between a specified range
     ages = np.random.randint(low=25, high=65, size=num_persons)
-    person_ages = pd.DataFrame(
-        {
-            "person_id": persons,
-            "age": ages,
-        }
-    )
+    person_ages = pl.DataFrame((persons, ages), schema=["person_id", "age"])
     # Create a list of persons with repetition
     person_ids = np.random.choice(persons, size=num_positions, replace=True)
     sorted_persons = np.sort(person_ids)
@@ -50,45 +46,43 @@ def construct_person_company_df(
         final_companies["company_id"].to_list(), size=num_positions, replace=True
     )
     # Combine persons and companies columns into a DataFrame
-    person_company_df = pd.DataFrame(
-        {
-            "person_id": sorted_persons,
-            "company_id": companies_list,
-        }
-    ).reset_index(drop=True)
-    person_company_df = person_company_df.drop_duplicates().sort_values(by="person_id")
+    person_company_df = pl.DataFrame(
+        (sorted_persons, companies_list), schema=["person_id", "company_id"]
+    )
+    person_company_df = person_company_df.sort(by="person_id")
     return person_ages, person_company_df
 
 
 def construct_person_company_and_location_df(
-    person_ages: pd.DataFrame,
-    person_company_df: pd.DataFrame,
-    companies: pd.DataFrame,
-) -> pd.DataFrame:
-    person_and_companies = (
-        person_company_df.join(companies.set_index("company_id"), how="inner", on="company_id")
-    ).reset_index(drop=True)
-    temp_df = person_and_companies[["person_id", "company_id", "locality", "country"]]
+    person_ages: pl.DataFrame,
+    person_company_df: pl.DataFrame,
+    companies: pl.DataFrame,
+) -> pl.DataFrame:
     person_company_and_location_df = (
-        temp_df.join(person_ages.set_index("person_id"), on="person_id").sort_values(
-            by=["person_id", "company_id"]
+        person_company_df.join(companies, on="company_id")
+        .select(
+            [
+                "person_id",
+                "company_id",
+                "locality",
+                "country",
+            ]
         )
-    ).reset_index(drop=True)
+        .join(person_ages, on="person_id")
+        .sort(["person_id", "company_id"])
+    )
     return person_company_and_location_df
 
 
-def main(num_persons: int, num_positions: int) -> None:
+def main(input_file: Path, num_persons: int, num_positions: int, limit: int) -> pl.DataFrame:
     with Timer(name="read file", text="Read input file in {:.4f}s"):
-        companies = get_companies(INPUT_FILE)
-    companies_count = get_top_country_counts(companies)
-    # Top 10 countries
-    top_10_countries = companies_count.iloc[:10, :].index.to_list()
-    # Choose only those companies that are in the top 10 countries
-    final_companies = (
-        (companies[companies.country.isin(top_10_countries) & companies.locality.notnull()])
-        .sort_values(by="company_id")
-        .reset_index(drop=True)
-    )
+        companies = get_companies(input_file, limit)
+    top_10_countries = get_top_country_counts(companies)["country"][:10].to_list()
+
+    # Filter companies by top 10 countries
+    final_companies = companies.filter(
+        (pl.col("country").is_in(top_10_countries) & pl.col("locality").is_not_null())
+    ).sort("company_id")
     person_ages, person_company_df = construct_person_company_df(
         num_persons, num_positions, final_companies
     )
@@ -114,6 +108,6 @@ if __name__ == "__main__":
     np.random.seed(37)
 
     with Timer(name="generation", text="Generating data completed in {:.4f}s"):
-        result = main(NUM_PERSONS, NUM_POSITIONS)
+        result = main(INPUT_FILE, NUM_PERSONS, NUM_POSITIONS, LIMIT)
         print(f"Obtained persons, companies and locations DataFrame of shape: {result.shape}")
         print(result.head(10))
