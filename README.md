@@ -1,6 +1,6 @@
 # Embedded databases
 
-This repo showcases the power of using embedded databases to assist in data-generation and data-processing workflows. The following embedded databases and their associated data structures are considered in the provided examples:
+This repo showcases the power of using embedded databases to assist in data-generation and data-processing workflows. The following open-source embedded databases are covered in the provided examples:
 
 - [DuckDB](https://github.com/duckdb/duckdb) (table)
 - [KùzuDB](https://github.com/kuzudb/kuzu) (graph)
@@ -27,11 +27,11 @@ It is this combination of features that allows embedded databases to be the go-t
 
 ### DuckDB
 
-DuckDB is a high-performance embedded database that can be queried via a rich SQL dialect. Its core is written in C++, and is designed to be fast, reliable and easy to set up and use. DuckDB is optimized for OLAP query workloads, which are typically characterized by complex, relatively long-running queries that process significant portions of the stored dataset, for example, aggregations over entire tables or joins between several large tables. Changes to the data are expected to be rather large-scale as well, with several rows being appended, or large portions of tables being changed or added at the same time.
+DuckDB is a high-performance open-source embedded database that can be queried via a rich SQL dialect. Its core is written in C++, and is designed to be fast, reliable and easy to set up and use. DuckDB is optimized for OLAP query workloads, which are typically characterized by complex, relatively long-running queries that process significant portions of the stored dataset, for example, aggregations over entire tables or joins between several large tables. Changes to the data are expected to be rather large-scale as well, with several rows being appended, or large portions of tables being changed or added at the same time.
 
 ### Kùzu
 
-Kùzu is an embedded property graph database management system (GDBMS) written in C++, built for query speed and scalability. Just like DuckDB, it is optimized for OLAP query workloads, but on graphs, and performs very well on complex join-heavy workloads involving aggregations involving many-to-many relationships.
+Kùzu is an open-source embedded property graph database written in C++, built for query speed and scalability. Just like DuckDB, it is optimized for OLAP query workloads, but for graphs, and performs very well on complex join-heavy workloads involving aggregations involving many-to-many relationships.
 
 ### LanceDB
 
