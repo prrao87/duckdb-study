@@ -94,8 +94,8 @@ def main(input_file: Path, num_persons: int, num_positions: int, limit: int) -> 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--num_persons", type=int, default=200)
-    parser.add_argument("--num_positions", type=int, default=300)
+    parser.add_argument("--num_persons", type=int, default=int(1E6))
+    parser.add_argument("--num_positions", type=int, default=int(1E7))
     parser.add_argument("--input_file", type=str, default="companies_sorted.parquet")
     parser.add_argument("--limit", type=int, default=0)
     args = parser.parse_args()
