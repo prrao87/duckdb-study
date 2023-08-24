@@ -1,13 +1,12 @@
 import argparse
 from pathlib import Path
-from typing import final
 
 import numpy as np
 import polars as pl
 from codetiming import Timer
 
 
-def get_companies(filename: str) -> pl.DataFrame:
+def get_companies(filename: str, limit: int) -> pl.DataFrame:
     """Reads the companies data from a csv file and returns a polars DataFrame."""
     df = pl.read_parquet(filename, use_pyarrow=True)
     # Replace spaces with underscores in column names
@@ -18,8 +17,8 @@ def get_companies(filename: str) -> pl.DataFrame:
         .rename({"column_0": "company_id"})
         .filter(pl.col("country").is_not_null() & pl.col("year_founded").is_not_null())
     )
-    if LIMIT > 0:
-        df = df.limit(LIMIT)
+    if limit > 0:
+        df = df.limit(limit)
     return df
 
 
@@ -50,7 +49,7 @@ def construct_person_company_df(
     person_company_df = pl.DataFrame(
         (sorted_persons, companies_list), schema=["person_id", "company_id"]
     )
-    person_company_df = person_company_df.unique().sort(by="person_id")
+    person_company_df = person_company_df.sort(by="person_id")
     return person_ages, person_company_df
 
 
@@ -75,9 +74,9 @@ def construct_person_company_and_location_df(
     return person_company_and_location_df
 
 
-def main(num_persons: int, num_positions: int) -> None:
+def main(input_file: Path, num_persons: int, num_positions: int, limit: int) -> pl.DataFrame:
     with Timer(name="read file", text="Read input file in {:.4f}s"):
-        companies = get_companies(INPUT_FILE)
+        companies = get_companies(input_file, limit)
     top_10_countries = get_top_country_counts(companies)["country"][:10].to_list()
 
     # Filter companies by top 10 countries
@@ -95,8 +94,8 @@ def main(num_persons: int, num_positions: int) -> None:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--num_persons", type=int, default=200)
-    parser.add_argument("--num_positions", type=int, default=300)
+    parser.add_argument("--num_persons", type=int, default=int(1E6))
+    parser.add_argument("--num_positions", type=int, default=int(1E7))
     parser.add_argument("--input_file", type=str, default="companies_sorted.parquet")
     parser.add_argument("--limit", type=int, default=0)
     args = parser.parse_args()
@@ -109,6 +108,6 @@ if __name__ == "__main__":
     np.random.seed(37)
 
     with Timer(name="generation", text="Generating data completed in {:.4f}s"):
-        result = main(NUM_PERSONS, NUM_POSITIONS)
+        result = main(INPUT_FILE, NUM_PERSONS, NUM_POSITIONS, LIMIT)
         print(f"Obtained persons, companies and locations DataFrame of shape: {result.shape}")
         print(result.head(10))

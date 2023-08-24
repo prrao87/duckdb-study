@@ -9,7 +9,7 @@ from codetiming import Timer
 from duckdb import DuckDBPyConnection, DuckDBPyRelation
 
 
-def get_companies(conn: DuckDBPyConnection, parquet_file: str) -> DuckDBPyRelation:
+def get_companies(conn: DuckDBPyConnection, parquet_file: str, limit: int) -> DuckDBPyRelation:
     companies = conn.sql(
         f"""
         SELECT * FROM '{parquet_file}'
@@ -23,8 +23,8 @@ def get_companies(conn: DuckDBPyConnection, parquet_file: str) -> DuckDBPyRelati
     names[0] = ("C0", "company_id")
     projection = ", ".join([f'"{old}" AS {new}' for old, new in names])
     companies = companies.project(projection)
-    if LIMIT > 0:
-        companies = companies.limit(LIMIT)
+    if limit > 0:
+        companies = companies.limit(limit)
     return companies
 
 
@@ -110,9 +110,11 @@ def get_person_companies_locations(
     return result.pl()
 
 
-def main(conn: DuckDBPyConnection, num_persons: int, num_positions: int) -> pl.DataFrame:
+def main(
+    conn: DuckDBPyConnection, input_file: Path, num_persons: int, num_positions: int, limit: int
+) -> pl.DataFrame:
     with Timer(name="read file", text="Read input file in {:.4f}s"):
-        companies = get_companies(conn, INPUT_FILE)
+        companies = get_companies(conn, input_file, limit)
     top_10_countries = get_top_country_counts(conn, companies).limit(10)
     final_companies = get_final_companies(conn, companies, top_10_countries)
     person_ages_tbl, person_companies_tbl = get_person_companies(
@@ -124,8 +126,8 @@ def main(conn: DuckDBPyConnection, num_persons: int, num_positions: int) -> pl.D
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--num_persons", type=int, default=200)
-    parser.add_argument("--num_positions", type=int, default=300)
+    parser.add_argument("--num_persons", type=int, default=int(1E6))
+    parser.add_argument("--num_positions", type=int, default=int(1E7))
     parser.add_argument("--input_file", type=str, default="companies_sorted.parquet")
     parser.add_argument("--limit", type=int, default=0)
     args = parser.parse_args()
@@ -141,6 +143,6 @@ if __name__ == "__main__":
     CONNECTION = duckdb.connect()
 
     with Timer(name="generation", text="Generating data completed in {:.4f}s"):
-        result = main(CONNECTION, NUM_PERSONS, NUM_POSITIONS)
+        result = main(CONNECTION, INPUT_FILE, NUM_PERSONS, NUM_POSITIONS, LIMIT)
         print(f"Obtained persons, companies and locations table")
         print(result.head(10))
