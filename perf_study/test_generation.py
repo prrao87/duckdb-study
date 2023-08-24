@@ -5,8 +5,9 @@ from duckdb_generate import main as generate_data_duckdb
 from pandas_generate import main as generate_data_pandas
 from polars_generate import main as generate_data_polars
 
-NUM_PERSONS = 1_000_000
-NUM_POSITIONS = 10_000_000
+# 1M persons and 10M positions at companies that these 1M persons have held
+NUM_PERSONS = int(1E6)
+NUM_POSITIONS = int(1E7)
 INPUT_FILE = Path(__file__).resolve().parents[1] / "data" / "companies_sorted.parquet"
 CONNECTION = duckdb.connect()
 
