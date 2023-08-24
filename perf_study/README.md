@@ -55,4 +55,16 @@ Legend:
 =============================================================================================== 3 passed in 144.33s (0:02:24) ===============================================================================================
 ```
 
-The results are ordered by average run time. As can be seen, `duckdb` is the fastest, followed by `polars`, and then `pandas`. The difference between `polars` and `pandas` is quite stark, with `polars` being 3.5x faster than `pandas`, and `duckdb` being ~1.5x faster than `polars`.
+### Observations
+
+Average over 3 runs:
+
+
+| Approach | Time (sec) | Speedup factor
+|---------|----------: | --------------:
+| `duckdb` | 3.84 | 1.0
+| `polars` | 5.77 | 1.5
+| `pandas` | 19.57 | 5.1
+
+As can be seen, `duckdb` is the fastest, followed by `polars`, and then `pandas`. The difference between `polars` and `pandas` is quite stark, with `polars` being 5 faster than `pandas`, and `duckdb` being ~1.5x faster than `polars`.
+
