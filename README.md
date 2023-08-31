@@ -44,30 +44,29 @@ cd perf_study
 
 
 ```sh
-$ pytest benchmark.py --benchmark-min-rounds=3 --benchmark-disable-gc
-
-==================================================================================================== test session starts ====================================================================================================
+$ pytest benchmark.py --benchmark-min-rounds=3 --benchmark-warmup-iterations=2 --benchmark-disable-gc
+===================================================================================================== test session starts =====================================================================================================
 platform darwin -- Python 3.11.2, pytest-7.4.0, pluggy-1.2.0
-benchmark: 4.0.0 (defaults: timer=time.perf_counter disable_gc=True min_rounds=3 min_time=0.000005 max_time=1.0 calibration_precision=10 warmup=False warmup_iterations=100000)
-rootdir: /code/embedded-dbs/perf_study
-plugins: benchmark-4.0.0
-collected 3 items                                                                                                                                                                                                           
+benchmark: 4.0.0 (defaults: timer=time.perf_counter disable_gc=True min_rounds=3 min_time=0.000005 max_time=1.0 calibration_precision=10 warmup=False warmup_iterations=2)
+rootdir: /code/duckdb-study/perf_study
+plugins: Faker-19.2.0, anyio-3.7.1, benchmark-4.0.0
+collected 3 items                                                                                                                                                                                                             
 
-benchmark.py ...                                                                                                                                                                                                      [100%]
+benchmark.py ...                                                                                                                                                                                                        [100%]
 
 
 ---------------------------------------------------------------------------------- benchmark: 3 tests ----------------------------------------------------------------------------------
 Name (time in s)              Min                Max               Mean            StdDev             Median               IQR            Outliers     OPS            Rounds  Iterations
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-test_benchmark_duckdb      3.6492 (1.0)       4.0477 (1.0)       3.8405 (1.0)      0.1998 (1.0)       3.8245 (1.0)      0.2989 (1.0)           1;0  0.2604 (1.0)           3           1
-test_benchmark_polars      5.4167 (1.48)      6.4685 (1.60)      5.7704 (1.50)     0.6046 (3.03)      5.4260 (1.42)     0.7888 (2.64)          1;0  0.1733 (0.67)          3           1
-test_benchmark_pandas     19.3788 (5.31)     19.8074 (4.89)     19.5716 (5.10)     0.2175 (1.09)     19.5287 (5.11)     0.3215 (1.08)          1;0  0.0511 (0.20)          3           1
+test_benchmark_duckdb      3.6226 (1.0)       3.6418 (1.0)       3.6300 (1.0)      0.0103 (1.0)       3.6257 (1.0)      0.0144 (1.0)           1;0  0.2755 (1.0)           3           1
+test_benchmark_polars      5.1474 (1.42)      6.0170 (1.65)      5.4731 (1.51)     0.4741 (45.99)     5.2548 (1.45)     0.6521 (45.25)         1;0  0.1827 (0.66)          3           1
+test_benchmark_pandas     17.6417 (4.87)     18.7966 (5.16)     18.2273 (5.02)     0.5776 (56.03)    18.2437 (5.03)     0.8662 (60.10)         1;0  0.0549 (0.20)          3           1
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 Legend:
   Outliers: 1 Standard Deviation from Mean; 1.5 IQR (InterQuartile Range) from 1st Quartile and 3rd Quartile.
   OPS: Operations Per Second, computed as 1 / Mean
-=============================================================================================== 3 passed in 144.33s (0:02:24) ===============================================================================================
+================================================================================================ 3 passed in 138.77s (0:02:18) ================================================================================================
 ```
 
 ### Results
@@ -77,8 +76,8 @@ Average over 3 runs:
 
 | Approach | Time (sec) | Runtime increase vs. DuckDB
 |---------|----------: | --------------:
-| `duckdb` | 3.84 | 1.0
-| `polars` | 5.77 | 1.5
-| `pandas` | 19.57 | 5.1
+| `duckdb` | 3.63 | 1x
+| `polars` | 5.47 | 1.5x
+| `pandas` | 18.23 | 5x
 
-As can be seen, `duckdb` is the fastest 🔥, followed cloesly by `polars`. `pandas` is the slowest by a factor of 5x when compared to DuckDB.
+As can be seen, `duckdb` is the fastest 🔥, followed closely by `polars`. `pandas` is the slowest by a factor of 5x when compared to DuckDB.
