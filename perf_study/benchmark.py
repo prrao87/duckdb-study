@@ -1,5 +1,6 @@
-import duckdb
 from pathlib import Path
+
+import duckdb
 
 from duckdb_generate import main as generate_data_duckdb
 from pandas_generate import main as generate_data_pandas
@@ -12,18 +13,18 @@ CONNECTION = duckdb.connect()
 
 
 def test_benchmark_duckdb(benchmark):
-    result = benchmark(generate_data_duckdb, CONNECTION, INPUT_FILE, NUM_PERSONS, NUM_POSITIONS, 0)
+    result = benchmark(generate_data_duckdb, CONNECTION, INPUT_FILE, NUM_PERSONS, NUM_POSITIONS)
     assert result.shape[0] == NUM_POSITIONS
     assert result.shape[1] == 5
 
 
 def test_benchmark_polars(benchmark):
-    result = benchmark(generate_data_polars, INPUT_FILE, NUM_PERSONS, NUM_POSITIONS, 0)
+    result = benchmark(generate_data_polars, INPUT_FILE, NUM_PERSONS, NUM_POSITIONS)
     assert result.shape[0] == NUM_POSITIONS
     assert result.shape[1] == 5
 
 
 def test_benchmark_pandas(benchmark):
-    result = benchmark(generate_data_pandas, INPUT_FILE, NUM_PERSONS, NUM_POSITIONS, 0)
+    result = benchmark(generate_data_pandas, INPUT_FILE, NUM_PERSONS, NUM_POSITIONS)
     assert result.shape[0] == NUM_POSITIONS
     assert result.shape[1] == 5

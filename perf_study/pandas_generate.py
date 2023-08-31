@@ -6,7 +6,7 @@ import pandas as pd
 from codetiming import Timer
 
 
-def get_companies(filename: str, limit: int) -> pd.DataFrame:
+def get_companies(filename: str) -> pd.DataFrame:
     """Reads the companies data from a csv f
     ile and returns a pandas DataFrame."""
     df = pd.read_parquet(filename).rename(columns={"": "company_id"})
@@ -16,8 +16,6 @@ def get_companies(filename: str, limit: int) -> pd.DataFrame:
     df = df[df.year_founded.notnull() & df.country.notnull()]
     # Cast year_founded as int
     df.year_founded = df.year_founded.astype(int)
-    if limit > 0:
-        df = df.iloc[:limit, :]
     return df
 
 
@@ -77,9 +75,9 @@ def construct_person_company_and_location_df(
     return person_company_and_location_df
 
 
-def main(input_file: Path, num_persons: int, num_positions: int, limit: int) -> pd.DataFrame:
+def main(input_file: Path, num_persons: int, num_positions: int) -> pd.DataFrame:
     with Timer(name="read file", text="Read input file in {:.4f}s"):
-        companies = get_companies(input_file, limit)
+        companies = get_companies(input_file)
     companies_count = get_top_country_counts(companies)
     # Top 10 countries
     top_10_countries = companies_count.iloc[:10, :].index.to_list()
@@ -100,13 +98,11 @@ def main(input_file: Path, num_persons: int, num_positions: int, limit: int) -> 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--num_persons", type=int, default=int(1E6))
-    parser.add_argument("--num_positions", type=int, default=int(1E7))
+    parser.add_argument("--num_persons", type=int, default=int(1e6))
+    parser.add_argument("--num_positions", type=int, default=int(1e7))
     parser.add_argument("--input_file", type=str, default="companies_sorted.parquet")
-    parser.add_argument("--limit", type=int, default=0)
     args = parser.parse_args()
 
-    LIMIT = args.limit
     NUM_PERSONS = args.num_persons
     NUM_POSITIONS = args.num_positions
     INPUT_FILE = Path(__file__).resolve().parents[1] / "data" / args.input_file
@@ -114,6 +110,6 @@ if __name__ == "__main__":
     np.random.seed(37)
 
     with Timer(name="generation", text="Generating data completed in {:.4f}s"):
-        result = main(INPUT_FILE, NUM_PERSONS, NUM_POSITIONS, LIMIT)
+        result = main(INPUT_FILE, NUM_PERSONS, NUM_POSITIONS)
         print(f"Obtained persons, companies and locations DataFrame of shape: {result.shape}")
         print(result.head(10))
